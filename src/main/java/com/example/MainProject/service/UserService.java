@@ -38,7 +38,6 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
         UserProfileResponse response = new UserProfileResponse();
-        response.setId(user.getId());
         response.setEmployeeId(user.getEmployeeId());
         response.setFirstName(user.getFirstName());
         response.setLastName(user.getLastName());
@@ -73,7 +72,6 @@ public class UserService {
         User updatedUser = userRepository.save(user);
 
         UserProfileResponse response = new UserProfileResponse();
-        response.setId(updatedUser.getId());
         response.setEmployeeId(updatedUser.getEmployeeId());
         response.setFirstName(updatedUser.getFirstName());
         response.setLastName(updatedUser.getLastName());
@@ -84,4 +82,5 @@ public class UserService {
         response.setProfilePictureUrl(updatedUser.getProfilePictureUrl());
         return response;
     }
+    
 }

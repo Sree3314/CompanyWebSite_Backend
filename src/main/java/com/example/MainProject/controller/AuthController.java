@@ -1,8 +1,11 @@
-package com.example.MainProject.controller;
 
+ 
+package com.example.MainProject.controller;
+ 
 import com.example.MainProject.dto.AuthResponse;
 import com.example.MainProject.dto.LoginRequest;
 import com.example.MainProject.dto.RegisterRequest;
+import com.example.MainProject.dto.ResetPasswordRequest; // CORRECT: Restore ResetPasswordRequest import
 import com.example.MainProject.model.User;
 import com.example.MainProject.service.AuthService;
 import jakarta.validation.Valid;
@@ -13,22 +16,22 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import java.util.Map; // CORRECT: Restore Map import for forgot-password
+ 
 /**
- * REST Controller for authentication operations (register, login).
- * Password reset and OTP verification endpoints are removed for this simplified phase.
+ * REST Controller for authentication operations (register, login, password reset).
  */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-
+ 
     private final AuthService authService;
-
+ 
     @Autowired
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
-
+ 
     /**
      * Handles user registration. Expects a pre-approved employee ID in the DB.
      * Upon successful registration, the account status changes directly to ACTIVE.
@@ -45,7 +48,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
+ 
     /**
      * Authenticates a user and returns a JWT.
      * POST /api/auth/login
@@ -61,4 +64,43 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
+ 
+    /**
+     * Initiates password reset by sending an OTP to the user's personal email.
+     * POST /api/auth/forgot-password
+     * @param request A map containing the "personalEmail" field.
+     * @return ResponseEntity with success message or error.
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String personalEmail = request.get("personalEmail");
+        if (personalEmail == null || personalEmail.isBlank()) {
+            return ResponseEntity.badRequest().body("Personal email is required.");
+        }
+        try {
+            authService.initiatePasswordReset(personalEmail);
+            return ResponseEntity.ok("Password reset OTP sent to your personal email.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+ 
+    /**
+     * Resets the user's password after verifying the OTP.
+     * POST /api/auth/reset-password
+     * @param request ResetPasswordRequest DTO containing organization email, OTP, and new password.
+     * @return ResponseEntity with success message or error.
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            // Note: ResetPasswordRequest DTO has 'organizationEmail' and 'token' (which is the OTP)
+            authService.resetPassword(request.getOrganizationEmail(), request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok("Password has been reset successfully.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
+ 
+ 

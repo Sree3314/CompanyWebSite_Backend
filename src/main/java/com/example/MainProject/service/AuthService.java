@@ -1,14 +1,22 @@
-package com.example.MainProject.service;
 
+ 
+package com.example.MainProject.service;
+ 
 import com.example.MainProject.dto.AuthResponse;
 import com.example.MainProject.dto.LoginRequest;
 import com.example.MainProject.dto.RegisterRequest;
 import com.example.MainProject.model.User;
 import com.example.MainProject.model.User.AccountStatus;
+import com.example.MainProject.model.User.Role;
+import com.example.MainProject.model.VerificationToken;
 import com.example.MainProject.repository.UserRepository;
+import com.example.MainProject.repository.VerificationTokenRepository;
 import com.example.MainProject.util.JwtUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -16,56 +24,78 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+ 
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+ 
 @Service
 public class AuthService {
-
+ 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
     private final JwtUtil jwtUtil;
-
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final JavaMailSender mailSender;
+ 
+    @Value("${spring.mail.username}")
+    private String mailUsername; // Injected email username for 'From' address
+ 
+    private static final Set<String> MANAGER_JOB_TITLES = new HashSet<>(Arrays.asList(
+            "Software Engineering Manager", "Technical Lead", "Project Manager", "Product Manager",
+            "Scrum Master", "Director of Engineering", "Engineering Manager",
+            "Solutions Architect (with leadership focus)", "Release Manager", "IT Manager"
+    ));
+ 
+    private static final Set<String> EMPLOYEE_JOB_TITLES = new HashSet<>(Arrays.asList(
+            "Software Developer (Backend)", "Frontend Engineer", "Mobile App Developer (Android)",
+            "Quality Assurance (QA) Engineer", "DevOps Engineer", "Data Scientist",
+            "UX Designer", "Full-Stack Developer", "Cloud Engineer", "Site Reliability Engineer (SRE)"
+    ));
+ 
     @Autowired
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager, CustomUserDetailsService userDetailsService,
-                       JwtUtil jwtUtil) {
+                       JwtUtil jwtUtil, VerificationTokenRepository verificationTokenRepository, JavaMailSender mailSender) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
+        this.verificationTokenRepository = verificationTokenRepository;
+        this.mailSender = mailSender;
     }
-
+ 
     /**
      * Registers a new user or allows an UNREGISTERED pre-approved employee to create an account.
-     * Expects the employeeId to exist in the database with status UNREGISTERED.
-     * Upon successful registration, the account status changes directly to ACTIVE.
+     * Role is now determined by the provided job title.
      * @param request The RegisterRequest DTO.
      * @return The registered User entity.
      * @throws RuntimeException if employee ID not recognized, email mismatch, or account already registered/active.
      */
     @Transactional
     public User registerUser(RegisterRequest request) {
-        // Find if an UNREGISTERED user with this employeeId exists
         User user = userRepository.findByEmployeeId(request.getEmployeeId())
                 .orElseThrow(() -> new RuntimeException("Employee ID not recognized. Cannot create an account."));
-
-        // Check if the provided email matches the pre-registered employee's email
+ 
         if (!user.getEmail().equals(request.getEmail())) {
             throw new RuntimeException("Provided email does not match the pre-registered employee ID.");
         }
-
-        // Check if the account is already registered or active
+ 
         if (user.getAccountStatus() != User.AccountStatus.UNREGISTERED) {
             throw new RuntimeException("Account for this Employee ID is already registered or active.");
         }
-
+ 
+        // Determine role based on job title
+        Role assignedRole = determineRoleByJobTitle(request.getJobTitle());
+        user.setRole(assignedRole);
+ 
         // Update user details and set password
-        user.setEmail(request.getEmail());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
@@ -73,13 +103,30 @@ public class AuthService {
         user.setDepartment(request.getDepartment());
         user.setJobTitle(request.getJobTitle());
         user.setPersonalEmail(request.getPersonalEmail());
-        user.setAccountStatus(AccountStatus.ACTIVE); // Directly set to ACTIVE as no OTP verification
-
+        user.setAccountStatus(AccountStatus.ACTIVE);
+ 
         User savedUser = userRepository.save(user);
-
+ 
         return savedUser;
     }
-
+ 
+    /**
+     * Helper method to determine the user's role based on their job title.
+     * @param jobTitle The job title provided by the user.
+     * @return User.Role (MANAGER or USER). Defaults to USER if not explicitly a manager title.
+     */
+    private Role determineRoleByJobTitle(String jobTitle) {
+        if (jobTitle == null || jobTitle.trim().isEmpty()) {
+            return Role.USER;
+        }
+        String normalizedJobTitle = jobTitle.trim();
+ 
+        if (MANAGER_JOB_TITLES.contains(normalizedJobTitle)) {
+            return Role.MANAGER;
+        }
+        return Role.USER;
+    }
+ 
     /**
      * Authenticates a user and generates a JWT.
      * @param request LoginRequest DTO.
@@ -94,17 +141,105 @@ public class AuthService {
         } catch (BadCredentialsException e) {
             throw new RuntimeException("Incorrect email or password.");
         } catch (DisabledException e) {
-            // This means UserDetails.isEnabled() is false, i.e., account_status is not ACTIVE
             throw new RuntimeException("Account is not active. Please ensure it's registered.");
         }
-
+ 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
-
+ 
         // Retrieve roles from UserDetails and convert to Set<String>
         Set<String> roles = userDetails.getAuthorities().stream()
                 .map(grantedAuthority -> grantedAuthority.getAuthority().replace("ROLE_", ""))
                 .collect(Collectors.toSet());
-
+ 
         return new AuthResponse(jwtUtil.generateToken(userDetails), userDetails.getUsername(), roles);
     }
+ 
+    /**
+     * Initiates the password reset process by sending an OTP to the user's personal email.
+     * @param personalEmail The personal email address of the user for recovery.
+     * @throws RuntimeException if user not found, personal email not set, or email sending fails.
+     */
+    @Transactional
+    public void initiatePasswordReset(String personalEmail) {
+        User user = userRepository.findByPersonalEmail(personalEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with personal email: " + personalEmail));
+ 
+        String otp = generateNumericOtp(6);
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(15);
+ 
+        verificationTokenRepository.deleteByUser(user);
+ 
+        VerificationToken verificationToken = new VerificationToken(otp, user, expiryDate);
+        verificationTokenRepository.save(verificationToken);
+ 
+        String subject = "Company Hub - Password Reset OTP";
+        String text = "Your OTP for password reset is: " + otp + "\nThis OTP is valid for 15 minutes.";
+        sendEmail(personalEmail, subject, text);
+    }
+ 
+    /**
+     * Resets the user's password after successful OTP verification.
+     * @param organizationEmail The user's organization email.
+     * @param otp The OTP received by the user.
+     * @param newPassword The new password to set.
+     * @throws RuntimeException if user not found, OTP invalid, or OTP expired.
+     */
+    @Transactional
+    public void resetPassword(String organizationEmail, String otp, String newPassword) {
+        User user = userRepository.findByEmail(organizationEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with organization email: " + organizationEmail));
+ 
+        VerificationToken verificationToken = verificationTokenRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("No active password reset request found for this user."));
+ 
+        if (!verificationToken.getToken().equals(otp)) {
+            throw new RuntimeException("Invalid OTP.");
+        }
+ 
+        if (verificationToken.isExpired()) {
+            verificationTokenRepository.delete(verificationToken);
+            throw new RuntimeException("OTP has expired. Please request a new one.");
+        }
+ 
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+ 
+        verificationTokenRepository.delete(verificationToken);
+    }
+ 
+    /**
+     * Helper method to send an email.
+     * @param to The recipient's email address.
+     * @param subject The subject of the email.
+     * @param text The body text of the email.
+     */
+    private void sendEmail(String to, String subject, String text) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(this.mailUsername);
+            message.setTo(to);
+            message.setSubject(subject);
+            message.setText(text);
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send email to " + to + ": " + e.getMessage());
+            throw new RuntimeException("Failed to send email. Please check server configuration or contact support. Error: " + e.getMessage());
+        }
+    }
+ 
+    /**
+     * Helper method to generate a numeric OTP of specified length.
+     * @param length The desired length of the OTP.
+     * @return A randomly generated numeric OTP string.
+     */
+    private String generateNumericOtp(int length) {
+        Random random = new Random();
+        StringBuilder otp = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            otp.append(random.nextInt(10));
+        }
+        return otp.toString();
+    }
 }
+ 
+ 

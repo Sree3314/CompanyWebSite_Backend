@@ -40,12 +40,12 @@ public class UserController {
         // It implements UserDetails.
         Object principal = authentication.getPrincipal();
         if (principal instanceof User) { // Directly cast to your User model
-            return ((User) principal).getId();
+            return ((User) principal).getEmployeeId();
         } else if (principal instanceof UserDetails) { // Fallback if Spring Security wraps your User
             String email = ((UserDetails) principal).getUsername();
             User user = userService.getUserRepository().findByEmail(email) // Using UserService's getter for UserRepository
                          .orElseThrow(() -> new RuntimeException("Authenticated user not found in DB by email."));
-            return user.getId();
+            return user.getEmployeeId();
         }
         throw new RuntimeException("Could not retrieve authenticated user ID from principal type: " + principal.getClass().getName());
     }

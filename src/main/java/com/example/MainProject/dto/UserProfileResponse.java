@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class UserProfileResponse {
     private Long id;
-    private String employeeId;
+    private Long employeeId;
     private String firstName;
     private String lastName;
     private String email;
@@ -18,8 +18,8 @@ public class UserProfileResponse {
     }
 
     // All-argument constructor
-    public UserProfileResponse(Long id, String employeeId, String firstName, String lastName, String email, String contactInformation, String department, String jobTitle, String profilePictureUrl) {
-        this.id = id;
+    public UserProfileResponse( Long employeeId, String firstName, String lastName, String email, String contactInformation, String department, String jobTitle, String profilePictureUrl) {
+  
         this.employeeId = employeeId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -30,12 +30,9 @@ public class UserProfileResponse {
         this.profilePictureUrl = profilePictureUrl;
     }
 
-    // --- Getters ---
-    public Long getId() {
-        return id;
-    }
+   
 
-    public String getEmployeeId() {
+    public Long getEmployeeId() {
         return employeeId;
     }
 
@@ -68,12 +65,10 @@ public class UserProfileResponse {
     }
 
     // --- Setters ---
-    public void setId(Long id) {
-        this.id = id;
-    }
+ 
 
-    public void setEmployeeId(String employeeId) {
-        this.employeeId = employeeId;
+    public void setEmployeeId(Long long1) {
+        this.employeeId = long1;
     }
 
     public void setFirstName(String firstName) {
@@ -121,8 +116,7 @@ public class UserProfileResponse {
     @Override
     public String toString() {
         return "UserProfileResponse{" +
-               "id=" + id +
-               ", employeeId='" + employeeId + '\'' +
+               " employeeId='" + employeeId + '\'' +
                ", firstName='" + firstName + '\'' +
                ", lastName='" + lastName + '\'' +
                ", email='" + email + '\'' +

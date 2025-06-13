@@ -88,7 +88,7 @@ public class UploadController {
     public ResponseEntity<UploadDTO> getUploadById(@PathVariable Long uploadId) {
         try {
             User authenticatedUser = getAuthenticatedUser();
-            UploadDTO upload = uploadService.getUploadByIdAndUserId(uploadId, authenticatedUser.getId());
+            UploadDTO upload = uploadService.getUploadByIdAndUserId(uploadId, authenticatedUser.getEmployeeId());
             return ResponseEntity.ok(upload);
         } catch (ResponseStatusException e) {
             throw e;
@@ -107,7 +107,7 @@ public class UploadController {
     public ResponseEntity<List<UploadDTO>> getMyUploads() {
         try {
             User authenticatedUser = getAuthenticatedUser();
-            List<UploadDTO> myUploads = uploadService.getUploadsByUserId(authenticatedUser.getId());
+            List<UploadDTO> myUploads = uploadService.getUploadsByUserId(authenticatedUser.getEmployeeId());
             return ResponseEntity.ok(myUploads);
         } catch (ResponseStatusException e) {
             throw e;
@@ -115,4 +115,20 @@ public class UploadController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+    
+    @DeleteMapping("/{uploadId}") // Standard RESTful DELETE mapping
+    public ResponseEntity<Void> deleteUpload(@PathVariable Long uploadId) {
+        try {
+            User authenticatedUser = getAuthenticatedUser();
+            uploadService.deleteUpload(uploadId, authenticatedUser);
+            return ResponseEntity.noContent().build(); // 204 No Content for successful deletion
+        } catch (ResponseStatusException e) {
+            throw e; // Re-throw handled exceptions (e.g., NOT_FOUND, FORBIDDEN)
+        } catch (Exception e) {
+            // Log unexpected errors
+            // logger.error("An unexpected error occurred while deleting upload {}: {}", uploadId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
 }

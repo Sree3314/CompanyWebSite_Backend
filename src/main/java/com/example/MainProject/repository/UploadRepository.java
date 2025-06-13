@@ -9,9 +9,10 @@ import java.util.Optional;
 
 @Repository
 public interface UploadRepository extends JpaRepository<Upload, Long> {
-    List<Upload> findByUserId(Long userId); // Find uploads by the internal user ID
+	List<Upload> findByUserEmployeeId(Long employeeId);
+ // Find uploads by the internal user ID
 
     List<Upload> findByIsForShowcaseTrue(); // For the future exhibition module
 
-    Optional<Upload> findByIdAndUserId(Long uploadId, Long userId); // Find specific upload by ID and its uploader
+    Optional<Upload> findByIdAndUserEmployeeId(Long uploadId, Long employeeId); // Find specific upload by ID and its uploader
 }

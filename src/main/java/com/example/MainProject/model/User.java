@@ -1,6 +1,7 @@
 package com.example.MainProject.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,13 +13,12 @@ import java.util.Objects;
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
-
+	
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
-
-	@Column(unique = true, nullable = false)
-	private String employeeId; // Or Manager ID
+    @NotNull(message = "Employee ID is required")
+    @Min(value = 1, message = "Employee ID must be a positive number")
+    @Column(unique = true, nullable = false)
+    private Long employeeId;
 
 	@Column(nullable = false)
 	private String firstName;
@@ -55,14 +55,13 @@ public class User implements UserDetails {
 
 	public enum AccountStatus {
 		UNREGISTERED, // Employee ID exists, but hasn't completed registration/set password
-		ACTIVE,       // Account is fully active
-		SUSPENDED,    // Account temporarily suspended
-		DEACTIVATED   // Account permanently deactivated
+		ACTIVE, // Account is fully active
+		SUSPENDED, // Account temporarily suspended
+		DEACTIVATED // Account permanently deactivated
 	}
 
 	public enum Role {
-		USER,
-		MANAGER
+		USER, MANAGER
 	}
 
 	// No-argument constructor (required by JPA)
@@ -71,21 +70,13 @@ public class User implements UserDetails {
 		this.accountStatus = AccountStatus.UNREGISTERED;
 	}
 
-
 	// --- Getters and Setters for all fields ---
-	public Long getId() {
-		return id;
-	}
 
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public String getEmployeeId() {
+	public Long getEmployeeId() {
 		return employeeId;
 	}
 
-	public void setEmployeeId(String employeeId) {
+	public void setEmployeeId(Long employeeId) {
 		this.employeeId = employeeId;
 	}
 
@@ -210,40 +201,33 @@ public class User implements UserDetails {
 
 	@Override
 	public boolean isEnabled() {
-		// Account is enabled if ACTIVE. UNREGISTERED accounts are not enabled for login.
+		// Account is enabled if ACTIVE. UNREGISTERED accounts are not enabled for
+		// login.
 		return this.accountStatus == AccountStatus.ACTIVE;
 	}
 
 	// --- toString(), equals(), hashCode() ---
 	@Override
 	public String toString() {
-		return "User{" +
-				"id=" + id +
-				", employeeId='" + employeeId + '\'' +
-				", firstName='" + firstName + '\'' +
-				", lastName='" + lastName + '\'' +
-				", email='" + email + '\'' +
-				", contactInformation='" + contactInformation + '\'' +
-				", department='" + department + '\'' +
-				", jobTitle='" + jobTitle + '\'' +
-				", profilePictureUrl='" + profilePictureUrl + '\'' +
-				", passwordHash='[PROTECTED]'" +
-				", accountStatus=" + accountStatus +
-				", role=" + role +
-				", personalEmail='" + personalEmail + '\'' +
-				'}';
+		return "User{" + " employeeId='" + employeeId + '\'' + ", firstName='" + firstName + '\'' + ", lastName='"
+				+ lastName + '\'' + ", email='" + email + '\'' + ", contactInformation='" + contactInformation + '\''
+				+ ", department='" + department + '\'' + ", jobTitle='" + jobTitle + '\'' + ", profilePictureUrl='"
+				+ profilePictureUrl + '\'' + ", passwordHash='[PROTECTED]'" + ", accountStatus=" + accountStatus
+				+ ", role=" + role + ", personalEmail='" + personalEmail + '\'' + '}';
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
 		User user = (User) o;
-		return Objects.equals(id, user.id);
+		return Objects.equals(employeeId, user.employeeId);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(id);
+		return Objects.hash(employeeId);
 	}
 }

@@ -25,7 +25,7 @@ public class Upload {
 
     // Many-to-one relationship with User (our MainProject's User entity)
     @ManyToOne
-    @JoinColumn(name = "emp_id", nullable = false) // Foreign key column in 'uploads' table, linking to users
+    @JoinColumn(name = "employee_id", nullable = false) // Foreign key column in 'uploads' table, linking to users
     private User user;
 
     @Column(nullable = false)

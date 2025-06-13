@@ -68,7 +68,7 @@ public class UploadService { // Renamed from UserUploadService (if it existed)
      * @throws ResponseStatusException if upload not found or does not belong to the user.
      */
     public UploadDTO getUploadByIdAndUserId(Long uploadId, Long userId) {
-        Upload upload = uploadRepository.findByIdAndUserId(uploadId, userId)
+        Upload upload = uploadRepository.findByIdAndUserEmployeeId(uploadId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Upload not found or you do not have permission to view this upload."));
         return convertToUploadDTO(upload);
     }
@@ -79,7 +79,7 @@ public class UploadService { // Renamed from UserUploadService (if it existed)
      * @return A list of UploadDTOs.
      */
     public List<UploadDTO> getUploadsByUserId(Long userId) {
-        List<Upload> uploads = uploadRepository.findByUserId(userId);
+        List<Upload> uploads = uploadRepository.findByUserEmployeeId(userId);
         return uploads.stream()
                 .map(this::convertToUploadDTO)
                 .collect(Collectors.toList());
@@ -93,7 +93,7 @@ public class UploadService { // Renamed from UserUploadService (if it existed)
      */
     private UploadDTO convertToUploadDTO(Upload upload) {
         String userName = upload.getUser() != null ? upload.getUser().getEmail() : "Unknown"; // Use getEmail for userName
-        Long internalUserId = upload.getUser() != null ? upload.getUser().getId() : null;
+        Long internalUserId = upload.getUser() != null ? upload.getUser().getEmployeeId() : null;
 
         return new UploadDTO(
             upload.getId().toString(),
@@ -111,4 +111,24 @@ public class UploadService { // Renamed from UserUploadService (if it existed)
             upload.getExternalEmployeeId()
         );
     }
+    @Transactional // Ensure delete operation is transactional
+    public void deleteUpload(Long uploadId, User authenticatedUser) {
+        // 1. Find the upload
+        Upload upload = uploadRepository.findById(uploadId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Upload not found with ID: " + uploadId));
+
+        // 2. Perform authorization check
+        // Check if the authenticated user is the owner OR if they are a MANAGER
+        if (!upload.getUser().getEmployeeId().equals(authenticatedUser.getEmployeeId()) && // Not the owner
+            !authenticatedUser.getRole().equals(User.Role.MANAGER)) {    // And not a manager
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have permission to delete this upload.");
+        }
+
+        // 3. Delete the upload
+        uploadRepository.delete(upload); // Or uploadRepository.deleteById(uploadId);
+    }
+
+   
+
+    
 }
