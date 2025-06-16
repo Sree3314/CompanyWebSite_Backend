@@ -27,7 +27,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import org.springframework.stereotype.Controller;
-
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.security.core.Authentication;
 
 import org.springframework.security.core.context.SecurityContextHolder;

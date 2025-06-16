@@ -315,21 +315,43 @@ public class SecurityConfig {
             .authorizeHttpRequests(authorize -> authorize
             		 // Publicly accessible authentication endpoints
                   .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
+                  
+                  .requestMatchers("/ws/**").permitAll()
    
                   // Authenticated access for user profile endpoints
                   .requestMatchers("/api/users/me").authenticated()
+                  
    
-                  // Authenticated access for ALL user upload endpoints (POST, GET by ID, GET my-uploads)
-                  .requestMatchers("/api/uploads", "/api/uploads/*", "/api/uploads/my-uploads").authenticated()
-                  // Specific access for manager actions on uploads (rating/commenting)
-                  .requestMatchers(HttpMethod.PATCH, "/api/uploads/*/rate", "/api/uploads/*/comment").hasRole("MANAGER")
-                  .requestMatchers("/ws/**").permitAll() 
+               // Manager-only actions on uploads (rating/commenting) - MOST SPECIFIC for /uploads path
+                  .requestMatchers(HttpMethod.PATCH, "/api/uploads/{uploadId}/rate", "/api/uploads/{uploadId}/comment").hasRole("MANAGER")
+   
+                  // Publicly accessible exhibition viewing (all items)
+                  .requestMatchers(HttpMethod.GET, "/api/exhibition").authenticated()
+                  // Publicly accessible exhibition viewing (specific item by uploadId)
+                  .requestMatchers(HttpMethod.GET, "/api/uploads/{uploadId}").authenticated()
+                  // NEW: Publicly accessible filtered exhibition viewing by externalEmployeeId/firstName
+                  .requestMatchers(HttpMethod.GET, "/api/exhibition/filtered-projects").permitAll()
+   
+   
+                  // Authenticated access for creating new uploads
+                  .requestMatchers(HttpMethod.POST, "/api/uploads").authenticated()
+                  // Authenticated access for viewing ALL OF MY OWN uploads
+                  .requestMatchers(HttpMethod.GET, "/api/uploads/my-uploads").authenticated()
+                  // Authenticated access for viewing MY OWN specific upload by ID
+                  .requestMatchers(HttpMethod.GET, "/api/uploads/{uploadId}/mine").authenticated()
+                  // Authenticated access for deleting my own upload (or manager deleting any)
+                  .requestMatchers(HttpMethod.DELETE, "/api/uploads/{uploadId}").authenticated()
+   
+   
+   
+                  
+                  
                   
                // Authenticated access for FAQ module
                   .requestMatchers("/api/faq/**").authenticated()
    
-                  // Publicly accessible exhibition viewing
-                  .requestMatchers(HttpMethod.GET, "/api/exhibition").authenticated()
+                
+                  
                // Job-related end points
                   .requestMatchers(HttpMethod.POST, "/api/jobs").hasRole("MANAGER")
                   .requestMatchers(HttpMethod.GET, "/api/jobs/manager/**").hasRole("MANAGER")

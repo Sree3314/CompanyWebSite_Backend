@@ -2,27 +2,32 @@
  
 package com.example.MainProject.controller;
  
+import java.util.Map; // CORRECT: Restore Map import for forgot-password
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.MainProject.dto.AuthResponse;
 import com.example.MainProject.dto.LoginRequest;
 import com.example.MainProject.dto.RegisterRequest;
 import com.example.MainProject.dto.ResetPasswordRequest; // CORRECT: Restore ResetPasswordRequest import
 import com.example.MainProject.model.User;
 import com.example.MainProject.service.AuthService;
+
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import java.util.Map; // CORRECT: Restore Map import for forgot-password
  
 /**
  * REST Controller for authentication operations (register, login, password reset).
  */
 @RestController
 @RequestMapping("/api/auth")
+
 public class AuthController {
  
     private final AuthService authService;

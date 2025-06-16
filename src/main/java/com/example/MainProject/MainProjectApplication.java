@@ -12,7 +12,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan; // Import Entit
 @EntityScan(basePackages = "com.example.MainProject.model") // Scan for User entity
 public class MainProjectApplication {
 
-    public static void main(String[] args) {
+     public static void main(String[] args) {
         SpringApplication.run(MainProjectApplication.class, args);
     }
 
