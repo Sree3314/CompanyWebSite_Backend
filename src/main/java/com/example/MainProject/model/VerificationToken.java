@@ -17,7 +17,7 @@ public class VerificationToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
  
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = false)
     private String token; // The actual OTP or verification string
  
     @OneToOne(fetch = FetchType.EAGER) // EAGER fetch for convenience, adjust if performance issue

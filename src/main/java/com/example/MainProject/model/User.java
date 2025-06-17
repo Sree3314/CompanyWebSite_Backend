@@ -50,7 +50,7 @@ public class User implements UserDetails {
 
 	// Fields for password reset/verification (personal email for recovery)
 	// Kept for future non-OTP password reset, but not used in this phase's logic.
-	@Column(name = "personal_email")
+	@Column(unique = true, nullable = false) // Add unique = true here
 	private String personalEmail;
 
 	public enum AccountStatus {

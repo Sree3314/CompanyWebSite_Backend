@@ -20,12 +20,14 @@ public class ApplicationService {
 	private final ApplicationRepository applicationRepository;
 	private final JobRepository jobRepository;
 	private final UserRepository userRepository;
+	private final EmailService emailService;
  
 	public ApplicationService(ApplicationRepository applicationRepository, JobRepository jobRepository,
-			UserRepository userRepository) {
+			UserRepository userRepository, EmailService emailService) {
 		this.applicationRepository = applicationRepository;
 		this.jobRepository = jobRepository;
 		this.userRepository = userRepository;
+		this.emailService = emailService; 
 	}
  
 	public Application applyForJob(ApplicationDTO dto, Principal principal) {
@@ -64,8 +66,22 @@ public class ApplicationService {
 	public Application updateApplicationStatus(Long id, Status status) {
 		Application application = applicationRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Application not found"));
+		User applicant = application.getEmployee();
 		application.setStatus(status);
-		return applicationRepository.save(application);
+		 Application updatedApplication = applicationRepository.save(application);
+
+	        // --- NEW: Trigger Email Based on New Status ---
+	        if (applicant != null) { // Only attempt to send if an applicant is found
+	            if (status == Status.ACCEPTED) { // Make sure 'Status.ACCEPTED' matches your enum value
+	                emailService.sendApplicationAcceptedEmail(applicant);
+	            } else if (status == Status.DECLINED) { // Make sure 'Status.REJECTED' matches your enum value
+	                emailService.sendApplicationRejectedEmail(applicant);
+	            }
+	            // You can add more conditions here for other statuses if needed
+	        }
+	        // ------------------------------------------
+
+	        return updatedApplication;
 	}
 }
  

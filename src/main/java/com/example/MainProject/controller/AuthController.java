@@ -46,10 +46,18 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
-        try {
-            User registeredUser = authService.registerUser(request);
-            return ResponseEntity.status(HttpStatus.OK).body("Registration successful. Account is now active.");
-        } catch (RuntimeException e) {
+    	 try {
+             User registeredUser = authService.registerUser(request);
+             // --- MODIFIED LINE: Return a JSON object for success ---
+             // Create a simple Map or a dedicated DTO for success messages if you prefer
+             return ResponseEntity.status(HttpStatus.OK)
+                                  .body(Map.of("message", "Registration successful. Account is now active.",
+                                              "email", registeredUser.getEmail(),
+                                              "employeeId", registeredUser.getEmployeeId()));
+             // If you had a dedicated DTO for this success message:
+             // .body(new RegistrationSuccessResponse("Registration successful. Account is now active.", registeredUser.getEmail()));
+
+         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -84,9 +92,11 @@ public class AuthController {
         }
         try {
             authService.initiatePasswordReset(personalEmail);
-            return ResponseEntity.ok("Password reset OTP sent to your personal email.");
+            // Return JSON for success
+            return ResponseEntity.ok(Map.of("message", "Password reset OTP sent to your personal email."));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            // Return JSON for error
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
  
@@ -98,13 +108,14 @@ public class AuthController {
      */
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        try {
-            // Note: ResetPasswordRequest DTO has 'organizationEmail' and 'token' (which is the OTP)
-            authService.resetPassword(request.getOrganizationEmail(), request.getToken(), request.getNewPassword());
-            return ResponseEntity.ok("Password has been reset successfully.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    	 try {
+             authService.resetPassword(request.getOrganizationEmail(), request.getToken(), request.getNewPassword());
+             // Return JSON for success
+             return ResponseEntity.ok(Map.of("message", "Password has been reset successfully."));
+         } catch (RuntimeException e) {
+             // Return JSON for error
+             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+         }
     }
 }
  

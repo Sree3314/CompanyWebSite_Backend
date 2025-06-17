@@ -46,6 +46,7 @@ public class UserService {
         response.setDepartment(user.getDepartment());
         response.setJobTitle(user.getJobTitle());
         response.setProfilePictureUrl(user.getProfilePictureUrl());
+     
         return response;
     }
 

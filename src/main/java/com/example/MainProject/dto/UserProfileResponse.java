@@ -12,6 +12,11 @@ public class UserProfileResponse {
     private String department;
     private String jobTitle;
     private String profilePictureUrl;
+    
+    public enum Role {
+		USER, MANAGER
+	}
+    private Role role;
 
     // No-argument constructor
     public UserProfileResponse() {
@@ -28,11 +33,20 @@ public class UserProfileResponse {
         this.department = department;
         this.jobTitle = jobTitle;
         this.profilePictureUrl = profilePictureUrl;
+       
     }
 
    
 
-    public Long getEmployeeId() {
+    public Role getRole() {
+		return role;
+	}
+
+	public void setRole(Role role) {
+		this.role = role;
+	}
+
+	public Long getEmployeeId() {
         return employeeId;
     }
 
@@ -124,6 +138,6 @@ public class UserProfileResponse {
                ", department='" + department + '\'' +
                ", jobTitle='" + jobTitle + '\'' +
                ", profilePictureUrl='" + profilePictureUrl + '\'' +
-               '}';
+                ", role='" + role + '}';
     }
 }
