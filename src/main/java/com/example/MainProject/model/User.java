@@ -46,7 +46,7 @@ public class User implements UserDetails {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
-	private Role role; // Single role for simplicity
+	protected Role role; // Single role for simplicity
 
 	// Fields for password reset/verification (personal email for recovery)
 	// Kept for future non-OTP password reset, but not used in this phase's logic.

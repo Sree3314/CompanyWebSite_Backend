@@ -46,7 +46,7 @@ public class UserService {
         response.setDepartment(user.getDepartment());
         response.setJobTitle(user.getJobTitle());
         response.setProfilePictureUrl(user.getProfilePictureUrl());
-     
+        response.setRole(user.getRole());
         return response;
     }
 
@@ -69,7 +69,7 @@ public class UserService {
         user.setDepartment(updateRequest.getDepartment());
         user.setJobTitle(updateRequest.getJobTitle());
         user.setProfilePictureUrl(updateRequest.getProfilePictureUrl());
-
+       
         User updatedUser = userRepository.save(user);
 
         UserProfileResponse response = new UserProfileResponse();
@@ -81,6 +81,7 @@ public class UserService {
         response.setDepartment(updatedUser.getDepartment());
         response.setJobTitle(updatedUser.getJobTitle());
         response.setProfilePictureUrl(updatedUser.getProfilePictureUrl());
+       
         return response;
     }
     
