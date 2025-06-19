@@ -17,7 +17,7 @@ public class UserProfileResponse extends User{
     private String department;
     private String jobTitle;
     private String profilePictureUrl;
-    
+    private Role role;
     
 
     // No-argument constructor
@@ -35,8 +35,8 @@ public class UserProfileResponse extends User{
         this.department = department;
         this.jobTitle = jobTitle;
         this.profilePictureUrl = profilePictureUrl;
-       
-    }
+    
+       }
 
    
 
