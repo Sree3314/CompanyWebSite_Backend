@@ -1,8 +1,13 @@
 package com.example.MainProject.dto;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.Objects;
+
+import com.example.MainProject.model.User.Role;
 
 public class UserProfileUpdateRequest {
     @NotBlank(message = "First name cannot be empty")
@@ -24,19 +29,24 @@ public class UserProfileUpdateRequest {
 
     @Size(max = 255, message = "Profile picture URL cannot exceed 255 characters")
     private String profilePictureUrl; // For updating or clearing
-
+     
+    @Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private Role role;
+    
     // No-argument constructor
     public UserProfileUpdateRequest() {
     }
 
     // All-argument constructor
-    public UserProfileUpdateRequest(String firstName, String lastName, String contactInformation, String department, String jobTitle, String profilePictureUrl) {
+    public UserProfileUpdateRequest(String firstName, String lastName, String contactInformation, String department, String jobTitle, String profilePictureUrl,Role role) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.contactInformation = contactInformation;
         this.department = department;
         this.jobTitle = jobTitle;
         this.profilePictureUrl = profilePictureUrl;
+        this.role=role;
     }
 
     // --- Getters ---
@@ -88,8 +98,17 @@ public class UserProfileUpdateRequest {
     public void setProfilePictureUrl(String profilePictureUrl) {
         this.profilePictureUrl = profilePictureUrl;
     }
+    
 
-    // --- equals(), hashCode(), toString() ---
+    public Role getRole() {
+		return role;
+	}
+
+	public void setRole(Role role) {
+		this.role = role;
+	}
+
+	// --- equals(), hashCode(), toString() ---
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

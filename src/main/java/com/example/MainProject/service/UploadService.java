@@ -115,8 +115,7 @@ public class UploadService {
 
         // 2. Perform authorization check
         // Check if the authenticated user is the owner OR if they are a MANAGER
-        if (!upload.getUser().getEmployeeId().equals(authenticatedUser.getEmployeeId()) && // Not the owner
-            !authenticatedUser.getRole().equals(User.Role.MANAGER)) {    // And not a manager
+        if (!upload.getUser().getEmployeeId().equals(authenticatedUser.getEmployeeId()) ) {    // And not a manager
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have permission to delete this upload.");
         }
 
