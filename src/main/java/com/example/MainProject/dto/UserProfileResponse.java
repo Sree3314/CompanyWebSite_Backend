@@ -4,7 +4,10 @@ import java.util.Objects;
 
 import com.example.MainProject.model.User;
 
-public class UserProfileResponse extends User {
+
+public class UserProfileResponse extends User{
+
+
     private Long id;
     private Long employeeId;
     private String firstName;
