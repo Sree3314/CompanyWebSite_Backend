@@ -9,8 +9,8 @@ import jakarta.validation.constraints.NotNull;
 
 public class LoginRequest {
 	
-	@Id
-    @NotNull(message = "Employee ID is required")
+	
+   // @NotNull(message = "Employee ID is required")
     @Min(value = 1, message = "Employee ID must be a positive number")
     @Column(unique = true, nullable = false)
     private Long employeeId;

@@ -2,8 +2,12 @@
  
 package com.example.MainProject.dto;
  
+import jakarta.persistence.Column;
+import jakarta.persistence.Id;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.Objects;
@@ -13,9 +17,11 @@ import java.util.Objects;
  * Role is now determined by job title in the backend.
  */
 public class RegisterRequest {
-    @NotBlank(message = "Employee ID is required")
-    @Size(max = 50, message = "Employee ID cannot exceed 50 characters")
-    private long employeeId;
+	
+    @NotNull(message = "Employee ID is required")
+    @Min(value = 1, message = "Employee ID must be a positive number")
+    @Column(unique = true, nullable = false)
+    private Long employeeId;
  
     @NotBlank(message = "First name is required")
     @Size(max = 100, message = "First name cannot exceed 100 characters")
