@@ -33,7 +33,7 @@ public class JobDTO {
     @Size(max = 500, message = "Skills required cannot exceed 500 characters")
     private String skillsRequired;
  
-    @NotNull(message = "Manager ID cannot be null") // ManagerId is crucial for job ownership
+    //@NotNull(message = "Manager ID cannot be null") // ManagerId is crucial for job ownership
     private Long managerId;
  
     // Getters and Setters (unchanged)
