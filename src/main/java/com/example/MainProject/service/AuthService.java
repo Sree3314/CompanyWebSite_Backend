@@ -1,7 +1,5 @@
-
- 
 package com.example.MainProject.service;
- 
+
 import com.example.MainProject.dto.AuthResponse;
 import com.example.MainProject.dto.LoginRequest;
 import com.example.MainProject.dto.RegisterRequest;
@@ -24,17 +22,18 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
- 
+
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
- 
+
 @Service
 public class AuthService {
- 
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -42,22 +41,22 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final VerificationTokenRepository verificationTokenRepository;
     private final JavaMailSender mailSender;
- 
+
     @Value("${spring.mail.username}")
     private String mailUsername; // Injected email username for 'From' address
- 
+
     private static final Set<String> MANAGER_JOB_TITLES = new HashSet<>(Arrays.asList(
             "Software Engineering Manager", "Technical Lead", "Project Manager", "Product Manager",
             "Scrum Master", "Director of Engineering", "Engineering Manager",
             "Solutions Architect (with leadership focus)", "Release Manager", "IT Manager"
     ));
- 
+
     private static final Set<String> EMPLOYEE_JOB_TITLES = new HashSet<>(Arrays.asList(
             "Software Developer (Backend)", "Frontend Engineer", "Mobile App Developer (Android)",
             "Quality Assurance (QA) Engineer", "DevOps Engineer", "Data Scientist",
             "UX Designer", "Full-Stack Developer", "Cloud Engineer", "Site Reliability Engineer (SRE)"
     ));
- 
+
     @Autowired
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager, CustomUserDetailsService userDetailsService,
@@ -70,7 +69,7 @@ public class AuthService {
         this.verificationTokenRepository = verificationTokenRepository;
         this.mailSender = mailSender;
     }
- 
+
     /**
      * Registers a new user or allows an UNREGISTERED pre-approved employee to create an account.
      * Role is now determined by the provided job title.
@@ -82,19 +81,19 @@ public class AuthService {
     public User registerUser(RegisterRequest request) {
         User user = userRepository.findByEmployeeId(request.getEmployeeId())
                 .orElseThrow(() -> new RuntimeException("Employee ID not recognized. Cannot create an account."));
- 
+
         if (!user.getEmail().equals(request.getEmail())) {
             throw new RuntimeException("Provided email does not match the pre-registered employee ID.");
         }
- 
+
         if (user.getAccountStatus() != User.AccountStatus.UNREGISTERED) {
             throw new RuntimeException("Account for this Employee ID is already registered or active.");
         }
- 
+
         // Determine role based on job title
         Role assignedRole = determineRoleByJobTitle(request.getJobTitle());
         user.setRole(assignedRole);
- 
+
         // Update user details and set password
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -104,12 +103,12 @@ public class AuthService {
         user.setJobTitle(request.getJobTitle());
         user.setPersonalEmail(request.getPersonalEmail());
         user.setAccountStatus(AccountStatus.ACTIVE);
- 
+
         User savedUser = userRepository.save(user);
- 
+
         return savedUser;
     }
- 
+
     /**
      * Helper method to determine the user's role based on their job title.
      * @param jobTitle The job title provided by the user.
@@ -120,17 +119,18 @@ public class AuthService {
             return Role.USER;
         }
         String normalizedJobTitle = jobTitle.trim();
- 
+
         if (MANAGER_JOB_TITLES.contains(normalizedJobTitle)) {
             return Role.MANAGER;
         }
         return Role.USER;
     }
- 
+
     /**
      * Authenticates a user and generates a JWT.
+     * UPDATED: Now includes the employeeId in the AuthResponse.
      * @param request LoginRequest DTO.
-     * @return AuthResponse containing JWT, email, and roles.
+     * @return AuthResponse containing JWT, email, roles, and employeeId.
      * @throws RuntimeException if authentication fails or account is not active.
      */
     public AuthResponse authenticateUser(LoginRequest request) {
@@ -143,17 +143,22 @@ public class AuthService {
         } catch (DisabledException e) {
             throw new RuntimeException("Account is not active. Please ensure it's registered.");
         }
- 
+
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
- 
-        // Retrieve roles from UserDetails and convert to Set<String>
-        Set<String> roles = userDetails.getAuthorities().stream()
+
+        // Retrieve roles from UserDetails and convert to List<String>
+        List<String> roles = userDetails.getAuthorities().stream()
                 .map(grantedAuthority -> grantedAuthority.getAuthority().replace("ROLE_", ""))
-                .collect(Collectors.toSet());
- 
-        return new AuthResponse(jwtUtil.generateToken(userDetails), userDetails.getUsername(), roles);
+                .collect(Collectors.toList());
+
+        // ADDED: Fetch the User entity to get the employeeId
+        User user = userRepository.findByEmail(request.getEmail())
+                                  .orElseThrow(() -> new RuntimeException("User not found for email: " + request.getEmail()));
+
+        // Return AuthResponse with JWT, email, roles, and the fetched employeeId
+        return new AuthResponse(jwtUtil.generateToken(userDetails), userDetails.getUsername(), roles, user.getEmployeeId());
     }
- 
+
     /**
      * Initiates the password reset process by sending an OTP to the user's personal email.
      * @param personalEmail The personal email address of the user for recovery.
@@ -163,20 +168,20 @@ public class AuthService {
     public void initiatePasswordReset(String personalEmail) {
         User user = userRepository.findByPersonalEmail(personalEmail)
                 .orElseThrow(() -> new RuntimeException("User not found with personal email: " + personalEmail));
- 
+
         String otp = generateNumericOtp(6);
         LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(15);
- 
+
         verificationTokenRepository.deleteByUser(user);
- 
+
         VerificationToken verificationToken = new VerificationToken(otp, user, expiryDate);
         verificationTokenRepository.save(verificationToken);
- 
+
         String subject = "Company Hub - Password Reset OTP";
         String text = "Your OTP for password reset is: " + otp + "\nThis OTP is valid for 15 minutes.";
         sendEmail(personalEmail, subject, text);
     }
- 
+
     /**
      * Resets the user's password after successful OTP verification.
      * @param organizationEmail The user's organization email.
@@ -188,25 +193,25 @@ public class AuthService {
     public void resetPassword(String organizationEmail, String otp, String newPassword) {
         User user = userRepository.findByEmail(organizationEmail)
                 .orElseThrow(() -> new RuntimeException("User not found with organization email: " + organizationEmail));
- 
+
         VerificationToken verificationToken = verificationTokenRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("No active password reset request found for this user."));
- 
+
         if (!verificationToken.getToken().equals(otp)) {
             throw new RuntimeException("Invalid OTP.");
         }
- 
+
         if (verificationToken.isExpired()) {
             verificationTokenRepository.delete(verificationToken);
             throw new RuntimeException("OTP has expired. Please request a new one.");
         }
- 
+
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
- 
+
         verificationTokenRepository.delete(verificationToken);
     }
- 
+
     /**
      * Helper method to send an email.
      * @param to The recipient's email address.
@@ -226,7 +231,7 @@ public class AuthService {
             throw new RuntimeException("Failed to send email. Please check server configuration or contact support. Error: " + e.getMessage());
         }
     }
- 
+
     /**
      * Helper method to generate a numeric OTP of specified length.
      * @param length The desired length of the OTP.
@@ -241,5 +246,3 @@ public class AuthService {
         return otp.toString();
     }
 }
- 
- 

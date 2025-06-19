@@ -1,15 +1,34 @@
 package com.example.MainProject.dto;
 
+import jakarta.validation.constraints.NotBlank; // Import for String validation
+import jakarta.validation.constraints.NotNull; // Import for Long/other non-String validation
+
 public class JobDTO {
+    @NotBlank(message = "Title cannot be empty")
     private String title;
+
+    @NotBlank(message = "Description cannot be empty")
     private String description;
+
+    @NotBlank(message = "Location cannot be empty")
     private String location;
+
+    @NotBlank(message = "Salary cannot be empty")
     private String salary;
+
+    @NotBlank(message = "Job type cannot be empty")
     private String jobType;
+
+    @NotBlank(message = "Experience level cannot be empty")
     private String experienceLevel;
+
+    @NotBlank(message = "Skills required cannot be empty")
     private String skillsRequired;
+
+    @NotNull(message = "Manager ID cannot be null")
     private Long managerId;
 
+    // Getters and Setters
     public String getTitle() {
         return title;
     }

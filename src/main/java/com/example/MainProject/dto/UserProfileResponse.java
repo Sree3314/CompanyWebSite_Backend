@@ -2,7 +2,9 @@ package com.example.MainProject.dto;
 
 import java.util.Objects;
 
-public class UserProfileResponse {
+import com.example.MainProject.model.User;
+
+public class UserProfileResponse extends User{
     private Long id;
     private Long employeeId;
     private String firstName;
@@ -13,10 +15,7 @@ public class UserProfileResponse {
     private String jobTitle;
     private String profilePictureUrl;
     
-    public enum Role {
-		USER, MANAGER
-	}
-    private Role role;
+    
 
     // No-argument constructor
     public UserProfileResponse() {
