@@ -191,7 +191,7 @@ public class AuthService {
      */
     @Transactional
     public void resetPassword(String organizationEmail, String otp, String newPassword) {
-        User user = userRepository.findByEmail(organizationEmail)
+        User user = userRepository.findByPersonalEmail(organizationEmail)
                 .orElseThrow(() -> new RuntimeException("User not found with organization email: " + organizationEmail));
 
         VerificationToken verificationToken = verificationTokenRepository.findByUser(user)
