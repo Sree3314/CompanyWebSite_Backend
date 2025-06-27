@@ -13,7 +13,7 @@ import java.util.Objects;
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
-	
+
 	@Id
     @NotNull(message = "Employee ID is required")
     @Min(value = 1, message = "Employee ID must be a positive number")
@@ -53,6 +53,10 @@ public class User implements UserDetails {
 	@Column(unique = true, nullable = false) // Add unique = true here
 	private String personalEmail;
 
+    // Field to track the number of projects uploaded by this user
+    @Column(nullable = false)
+    private int projectsUploaded;
+
 	public enum AccountStatus {
 		UNREGISTERED, // Employee ID exists, but hasn't completed registration/set password
 		ACTIVE, // Account is fully active
@@ -68,6 +72,7 @@ public class User implements UserDetails {
 	public User() {
 		this.role = Role.USER;
 		this.accountStatus = AccountStatus.UNREGISTERED;
+        this.projectsUploaded = 0; // Initialize projectsUploaded
 	}
 
 	// --- Getters and Setters for all fields ---
@@ -168,6 +173,14 @@ public class User implements UserDetails {
 		this.personalEmail = personalEmail;
 	}
 
+    public int getProjectsUploaded() {
+        return projectsUploaded;
+    }
+
+    public void setProjectsUploaded(int projectsUploaded) {
+        this.projectsUploaded = projectsUploaded;
+    }
+
 	// --- UserDetails implementations ---
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -213,7 +226,7 @@ public class User implements UserDetails {
 				+ lastName + '\'' + ", email='" + email + '\'' + ", contactInformation='" + contactInformation + '\''
 				+ ", department='" + department + '\'' + ", jobTitle='" + jobTitle + '\'' + ", profilePictureUrl='"
 				+ profilePictureUrl + '\'' + ", passwordHash='[PROTECTED]'" + ", accountStatus=" + accountStatus
-				+ ", role=" + role + ", personalEmail='" + personalEmail + '\'' + '}';
+				+ ", role=" + role + ", personalEmail='" + personalEmail + '\'' + ", projectsUploaded=" + projectsUploaded + '}';
 	}
 
 	@Override

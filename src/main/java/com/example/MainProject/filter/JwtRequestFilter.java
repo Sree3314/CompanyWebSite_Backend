@@ -28,13 +28,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
         this.jwtUtil = jwtUtil;
     }
-
+   
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
         final String authorizationHeader = request.getHeader("Authorization");
-
+//authorization header = Bearer ehjlkemrg.......
         String username = null;
         String jwt = null;
 

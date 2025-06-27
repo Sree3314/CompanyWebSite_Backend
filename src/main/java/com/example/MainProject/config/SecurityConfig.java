@@ -236,6 +236,7 @@ package com.example.MainProject.config;
 // package com.example.MainProject.config;
 
 import com.example.MainProject.filter.JwtRequestFilter;
+
 import com.example.MainProject.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -328,7 +329,9 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.PATCH, "/api/uploads/{uploadId}/rate",
 								"/api/uploads/{uploadId}/comment")
 						.hasRole("MANAGER")
-
+                         
+						.requestMatchers(HttpMethod.GET, "/api/leaderboard/projects-uploaded").authenticated()
+						.requestMatchers(HttpMethod.GET, "/api/leaderboard/average-ratings").authenticated()
 						// Publicly accessible exhibition viewing (all items)
 						.requestMatchers(HttpMethod.GET, "/api/exhibition").authenticated()
 						// Publicly accessible exhibition viewing (specific item by uploadId)

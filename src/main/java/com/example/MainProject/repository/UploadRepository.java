@@ -34,6 +34,14 @@ public interface UploadRepository extends JpaRepository<Upload, Long> {
 
     Optional<Upload> findByIdAndUserEmployeeId(Long uploadId, Long userAutoId); // Updated to use User.autoId
 
+    
+
+
+
+ // NEW: Find uploads that are for showcase, approved, and have a non-null rating
+ List<Upload> findByIsForShowcaseTrueAndApprovalStatusAndRatingIsNotNull(String approvalStatus);
+
+
 }
 
  
