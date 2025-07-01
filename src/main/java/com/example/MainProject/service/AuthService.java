@@ -79,29 +79,51 @@ public class AuthService {
      */
     @Transactional
     public User registerUser(RegisterRequest request) {
+        // 1. Find the user by employee ID
         User user = userRepository.findByEmployeeId(request.getEmployeeId())
                 .orElseThrow(() -> new RuntimeException("Employee ID not recognized. Cannot create an account."));
 
-        if (!user.getEmail().equals(request.getEmail())) {
-            throw new RuntimeException("Provided email does not match the pre-registered employee ID.");
-        }
-
+        // 2. Check if the account is already registered/active
         if (user.getAccountStatus() != User.AccountStatus.UNREGISTERED) {
             throw new RuntimeException("Account for this Employee ID is already registered or active.");
         }
 
-        // Determine role based on job title
+        // 3. Validate ALL provided details against the existing UNREGISTERED record
+        // This is the crucial part that needs to be enhanced
+        if (!user.getEmail().equalsIgnoreCase(request.getEmail())) {
+            throw new RuntimeException("Provided email does not match the pre-registered email for this employee ID.");
+        }
+        if (!user.getFirstName().equalsIgnoreCase(request.getFirstName())) {
+            throw new RuntimeException("Provided first name does not match the pre-registered first name for this employee ID.");
+        }
+        if (!user.getLastName().equalsIgnoreCase(request.getLastName())) {
+            throw new RuntimeException("Provided last name does not match the pre-registered last name for this employee ID.");
+        }
+        // Optional: Add checks for Department and Job Title if they are fixed and should not be changed by user during signup
+        // If these fields are meant to be strictly pre-defined and unchangeable by the user, then add similar checks:
+        if (user.getDepartment() != null && !user.getDepartment().equalsIgnoreCase(request.getDepartment())) {
+             throw new RuntimeException("Provided department does not match the pre-registered department for this employee ID.");
+        }
+        if (user.getJobTitle() != null && !user.getJobTitle().equalsIgnoreCase(request.getJobTitle())) {
+             throw new RuntimeException("Provided job title does not match the pre-registered job title for this employee ID.");
+        }
+
+
+        // 4. If all validations pass, determine role and update user details
         Role assignedRole = determineRoleByJobTitle(request.getJobTitle());
         user.setRole(assignedRole);
 
-        // Update user details and set password
+        // Update user details that are set during registration
+        // NOTE: The first name, last name, email, department, job title are validated above,
+        // so setting them here effectively re-sets them to the (validated) request values.
+        // This is generally fine as long as they passed the comparison.
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setContactInformation(request.getContactInformation());
-        user.setDepartment(request.getDepartment());
-        user.setJobTitle(request.getJobTitle());
-        user.setPersonalEmail(request.getPersonalEmail());
+        user.setDepartment(request.getDepartment()); // Ensure this is set based on request, assuming validated above
+        user.setJobTitle(request.getJobTitle());     // Ensure this is set based on request, assuming validated above
+        user.setPersonalEmail(request.getPersonalEmail()); // This is a new field for the user to set
         user.setAccountStatus(AccountStatus.ACTIVE);
 
         User savedUser = userRepository.save(user);
@@ -125,6 +147,8 @@ public class AuthService {
         }
         return Role.USER;
     }
+
+    // ... (rest of your AuthService methods like authenticateUser, initiatePasswordReset, resetPassword, sendEmail, generateNumericOtp) ...
 
     /**
      * Authenticates a user and generates a JWT.
@@ -153,7 +177,7 @@ public class AuthService {
 
         // ADDED: Fetch the User entity to get the employeeId
         User user = userRepository.findByEmail(request.getEmail())
-                                  .orElseThrow(() -> new RuntimeException("User not found for email: " + request.getEmail()));
+                                 .orElseThrow(() -> new RuntimeException("User not found for email: " + request.getEmail()));
 
         // Return AuthResponse with JWT, email, roles, and the fetched employeeId
         return new AuthResponse(jwtUtil.generateToken(userDetails), userDetails.getUsername(), roles, user.getEmployeeId());
@@ -191,7 +215,10 @@ public class AuthService {
      */
     @Transactional
     public void resetPassword(String organizationEmail, String otp, String newPassword) {
-        User user = userRepository.findByPersonalEmail(organizationEmail)
+        // NOTE: The previous code was looking up by personalEmail here.
+        // If the reset form requests the organizationEmail, then findByEmail should be used.
+        // Assuming 'organizationEmail' parameter means the primary email in your User model.
+        User user = userRepository.findByEmail(organizationEmail) // Changed from findByPersonalEmail
                 .orElseThrow(() -> new RuntimeException("User not found with organization email: " + organizationEmail));
 
         VerificationToken verificationToken = verificationTokenRepository.findByUser(user)
