@@ -323,6 +323,7 @@ public class SecurityConfig {
 
 						// Authenticated access for user profile endpoints
 						.requestMatchers("/api/users/me").authenticated()
+						.requestMatchers("/api/users/employee-details/**").permitAll() 
 
 						// Manager-only actions on uploads (rating/commenting) - MOST SPECIFIC for
 						// /uploads path
@@ -338,16 +339,16 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/api/uploads/{uploadId}").authenticated()
 						// NEW: Publicly accessible filtered exhibition viewing by
 						// externalEmployeeId/firstName
-						.requestMatchers(HttpMethod.GET, "/api/exhibition/filtered-projects").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/exhibition/filtered-projects").authenticated()
 
 						// Authenticated access for creating new uploads
-						.requestMatchers(HttpMethod.POST, "/api/uploads").authenticated()
+						.requestMatchers(HttpMethod.POST, "/api/uploads").hasRole("USER")
 						// Authenticated access for viewing ALL OF MY OWN uploads
-						.requestMatchers(HttpMethod.GET, "/api/uploads/my-uploads").authenticated()
+						.requestMatchers(HttpMethod.GET, "/api/uploads/my-uploads").hasRole("USER")
 						// Authenticated access for viewing MY OWN specific upload by ID
-						.requestMatchers(HttpMethod.GET, "/api/uploads/{uploadId}/mine").authenticated()
+						.requestMatchers(HttpMethod.GET, "/api/uploads/{uploadId}/mine").hasRole("USER")
 						// Authenticated access for deleting my own upload (or manager deleting any)
-						.requestMatchers(HttpMethod.DELETE, "/api/uploads/{uploadId}").authenticated()
+						.requestMatchers(HttpMethod.DELETE, "/api/uploads/{uploadId}").hasRole("USER")
 
 						// Authenticated access for FAQ module
 						.requestMatchers("/api/faq/**").authenticated()
