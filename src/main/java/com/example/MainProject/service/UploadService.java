@@ -1,5 +1,5 @@
 package com.example.MainProject.service;
-
+ 
 import com.example.MainProject.dto.UploadDTO;
 import com.example.MainProject.dto.UploadRequest;
 import com.example.MainProject.model.Upload;
@@ -11,27 +11,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
+ 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
-
+ 
 /**
- * Service layer for handling user-initiated upload creation and retrieval.
- * Uploads are handled by an authenticated user, linking to the User entity.
- */
+* Service layer for handling user-initiated upload creation and retrieval.
+* Uploads are handled by an authenticated user, linking to the User entity.
+*/
 @Service
 public class UploadService {
-
+ 
     private final UploadRepository uploadRepository;
     private final UserRepository userRepository;
-
+ 
     @Autowired
     public UploadService(UploadRepository uploadRepository, UserRepository userRepository) {
         this.uploadRepository = uploadRepository;
         this.userRepository = userRepository;
     }
-
+ 
     /**
      * Creates a new upload, linked to the User identified by the externalEmployeeId in the request.
      *
@@ -44,7 +44,7 @@ public class UploadService {
         User user = userRepository.findByEmployeeId(uploadRequest.getExternalEmployeeId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "User not found with Employee ID: " + uploadRequest.getExternalEmployeeId()));
-
+ 
         Upload newUpload = new Upload();
         newUpload.setUser(user); // Link the upload to the found User entity
         newUpload.setTitle(uploadRequest.getTitle());
@@ -54,15 +54,16 @@ public class UploadService {
         newUpload.setStartedDate(uploadRequest.getStartedDate());
         newUpload.setEndDate(uploadRequest.getEndDate());
         newUpload.setUploadDate(LocalDate.now()); // Set upload date to now
-
+ 
         // Set default values for showcase and approval as per requirement
         newUpload.setIsForShowcase(true);
+        // FIX: Set approvalStatus as a String, matching Upload.java
         newUpload.setApprovalStatus("approved");
-
+ 
         Upload savedUpload = uploadRepository.save(newUpload);
         return convertToUploadDTO(savedUpload);
     }
-
+ 
     /**
      * Retrieves all uploads by a specific user's employee ID.
      *
@@ -75,13 +76,13 @@ public class UploadService {
         User user = userRepository.findByEmployeeId(employeeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "User not found with Employee ID: " + employeeId));
-
+ 
         List<Upload> uploads = uploadRepository.findByUser(user); // Now assumes this method exists in UploadRepository
         return uploads.stream()
                 .map(this::convertToUploadDTO)
                 .collect(Collectors.toList());
     }
-
+ 
     /**
      * Retrieves a single upload by its ID, ensuring it belongs to the specified user's employee ID.
      *
@@ -93,15 +94,16 @@ public class UploadService {
     public UploadDTO getUploadByIdAndUserEmployeeId(Long uploadId, Long requestingUserEmployeeId) { // Renamed param for clarity
         Upload upload = uploadRepository.findById(uploadId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Upload not found with ID: " + uploadId));
-
+ 
         if (!upload.getUser().getEmployeeId().equals(requestingUserEmployeeId)) { // Check owner by employeeId
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have permission to view this upload.");
         }
         return convertToUploadDTO(upload);
     }
-
+ 
     /**
      * Deletes an upload.
+     * This method is now intended for USERs only, as per SecurityConfig.
      *
      * @param uploadId The ID of the upload to delete.
      * @param authenticatedUser The authenticated User object (used for authorization).
@@ -112,17 +114,17 @@ public class UploadService {
         // 1. Find the upload
         Upload upload = uploadRepository.findById(uploadId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Upload not found with ID: " + uploadId));
-
-        // 2. Perform authorization check
-        // Check if the authenticated user is the owner OR if they are a MANAGER
-        if (!upload.getUser().getEmployeeId().equals(authenticatedUser.getEmployeeId()) ) {    // And not a manager
+ 
+        // 2. Perform authorization check: Only the owner can delete their upload from this endpoint.
+        // The SecurityConfig already ensures only USERs can access this endpoint.
+        if (!upload.getUser().getEmployeeId().equals(authenticatedUser.getEmployeeId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have permission to delete this upload.");
         }
-
+ 
         // 3. Delete the upload
         uploadRepository.delete(upload);
     }
-
+ 
     /**
      * Helper method to convert an Upload entity to an UploadDTO.
      *
@@ -133,14 +135,14 @@ public class UploadService {
         // Get user's first and last name for the DTO
         String uploaderFirstName = upload.getUser() != null ? upload.getUser().getFirstName() : null;
         String uploaderLastName = upload.getUser() != null ? upload.getUser().getLastName() : null;
-
+ 
         return new UploadDTO(
             upload.getId().toString(), // Upload ID as String
             upload.getTitle(),
             upload.getDescription(),
             uploaderFirstName,
             uploaderLastName,
-            upload.getUploadDate(),
+            upload.getUploadDate(), // Now LocalDate directly
             upload.getFileUrl(),
             upload.getProjectDuration(),
             upload.getRating(),
@@ -151,3 +153,5 @@ public class UploadService {
         );
     }
 }
+ 
+ 

@@ -1,5 +1,6 @@
 package com.example.MainProject.controller;
 
+import com.example.MainProject.dto.EmployeeDetailsDTO;
 import com.example.MainProject.dto.UserProfileResponse;
 import com.example.MainProject.dto.UserProfileUpdateRequest;
 import com.example.MainProject.model.User;
@@ -86,6 +87,29 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+    // --- NEW ENDPOINT FOR FETCHING EMPLOYEE DETAILS BY ID ---
+    /**
+     * Retrieves basic employee details by employee ID. This endpoint is designed
+     * for pre-filling signup forms. It only returns details for UNREGISTERED employees.
+     *
+     * GET /api/users/employee-details/{employeeId}
+     *
+     * @param employeeId The ID of the employee to fetch details for.
+     * @return ResponseEntity with EmployeeDetailsDTO and HttpStatus.OK.
+     * @throws RuntimeException if employee ID not found or account is already registered.
+     */
+    @GetMapping("/employee-details/{employeeId}")
+    public ResponseEntity<?> getEmployeeDetailsForSignup(@PathVariable Long employeeId) {
+        try {
+            EmployeeDetailsDTO employeeDetails = userService.getEmployeeDetailsForSignup(employeeId);
+            return ResponseEntity.ok(employeeDetails);
+        } catch (RuntimeException e) {
+            // Return a meaningful error message
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred: " + e.getMessage());
         }
     }
 }

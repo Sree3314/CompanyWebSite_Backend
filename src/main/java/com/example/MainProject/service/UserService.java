@@ -1,5 +1,6 @@
 package com.example.MainProject.service;
 
+import com.example.MainProject.dto.EmployeeDetailsDTO;
 import com.example.MainProject.dto.UserProfileResponse;
 import com.example.MainProject.dto.UserProfileUpdateRequest;
 import com.example.MainProject.model.User;
@@ -83,6 +84,33 @@ public class UserService {
         response.setProfilePictureUrl(updatedUser.getProfilePictureUrl());
        
         return response;
+    }
+    // --- NEW: Method to fetch basic employee details by employeeId for signup pre-fill ---
+    /**
+     * Fetches basic employee details (first name, last name, organizational email, employeeId)
+     * based on the provided employee ID. This is typically used during signup to pre-fill fields.
+     *
+     * @param employeeId The employee ID to look up.
+     * @return An EmployeeDetailsDTO containing the fetched information.
+     * @throws RuntimeException if the employee ID is not found in the system.
+     */
+    public EmployeeDetailsDTO getEmployeeDetailsForSignup(Long employeeId) {
+        User user = userRepository.findByEmployeeId(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee ID " + employeeId + " not found."));
+
+        // Crucial: Only return details if the account is UNREGISTERED
+        // This prevents leaking information about already registered accounts or misusing this endpoint.
+        if (user.getAccountStatus() != User.AccountStatus.UNREGISTERED) {
+            throw new RuntimeException("Account for Employee ID " + employeeId + " is already registered or active.");
+        }
+
+        return new EmployeeDetailsDTO(
+                user.getEmployeeId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail()
+                // Do not include sensitive info like password hash or personal email here
+        );
     }
     
 }
